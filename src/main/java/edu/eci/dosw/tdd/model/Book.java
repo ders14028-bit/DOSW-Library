@@ -13,11 +13,5 @@ public class Book {
     private String author;
     private String id;
 
-    public Book(String id, String author, String title) {
-        this.id = id;
-        this.author = author;
-        this.title = title;
-    }
-
 }
 

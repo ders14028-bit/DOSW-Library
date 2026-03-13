@@ -4,7 +4,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Data
 @Getter
@@ -12,8 +12,8 @@ import java.time.LocalDateTime;
 public class Loan {
     private Book book;
     private User user;
-    private LocalDateTime loanDate;
+    private LocalDate loanDate;
+    private LocalDate returnDate;
     private Status status;
-
 
 }

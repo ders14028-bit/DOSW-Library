@@ -1,0 +1,7 @@
+package edu.eci.dosw.tdd.exception;
+
+public class BookNotAvailableException extends RuntimeException {
+    public BookNotAvailableException(String bookId) {
+        super("El libro con ID " + bookId + " no está disponible para préstamo.");
+    }
+}
