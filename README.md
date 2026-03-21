@@ -16,6 +16,20 @@
 
 ---
 
-## Pruebas unitarias
+## Modelo Entidad-Relacion (3FN)
+
+
+
+---
+
+## Pruebas
+
+### Pruebas unitarias
 
 ![img.png](src/main/resources/images/Test.png)
+
+---
+
+## Video de evidencia
+
+- [Video - evidencias de persistencia y endpoints](https://TU_ENLACE_AQUI)

@@ -9,7 +9,7 @@ public final class UserMapper {
     }
 
     public static UserDTO toDto(User user) {
-        return new UserDTO(user.getId(), user.getName());
+        return new UserDTO(user.getId(), user.getName(), user.getUsername(), user.getRole().name());
     }
 }
 

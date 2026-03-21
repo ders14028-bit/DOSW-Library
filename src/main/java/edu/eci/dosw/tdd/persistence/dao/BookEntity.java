@@ -1,11 +1,36 @@
-package edu.eci.dosw.tdd.core.model;
+package edu.eci.dosw.tdd.persistence.dao;
 
-public class Book {
-    private String title;
-    private String author;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "books")
+public class BookEntity {
+
+    @Id
     private String id;
+
+    @Column(nullable = false)
+    private String title;
+
+    @Column(nullable = false)
+    private String author;
+
+    @Column(name = "total_copies", nullable = false)
     private Integer totalCopies;
+
+    @Column(name = "available_copies", nullable = false)
     private Integer availableCopies;
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
 
     public String getTitle() {
         return title;
@@ -23,14 +48,6 @@ public class Book {
         this.author = author;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
     public Integer getTotalCopies() {
         return totalCopies;
     }
@@ -46,7 +63,5 @@ public class Book {
     public void setAvailableCopies(Integer availableCopies) {
         this.availableCopies = availableCopies;
     }
-
 }
-
 

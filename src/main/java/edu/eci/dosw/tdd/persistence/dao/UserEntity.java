@@ -1,10 +1,31 @@
-package edu.eci.dosw.tdd.core.model;
+package edu.eci.dosw.tdd.persistence.dao;
 
-public class User {
+import edu.eci.dosw.tdd.core.model.Role;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "users")
+public class UserEntity {
+
+    @Id
     private String id;
+
+    @Column(nullable = false)
     private String name;
+
+    @Column(nullable = false, unique = true)
     private String username;
+
+    @Column(nullable = false)
     private String password;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Role role;
 
     public String getId() {
@@ -46,5 +67,5 @@ public class User {
     public void setRole(Role role) {
         this.role = role;
     }
-
 }
+

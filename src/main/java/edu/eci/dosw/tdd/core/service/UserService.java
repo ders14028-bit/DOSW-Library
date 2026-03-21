@@ -1,44 +1,100 @@
 package edu.eci.dosw.tdd.core.service;
 
+import edu.eci.dosw.tdd.core.exception.ForbiddenOperationException;
 import edu.eci.dosw.tdd.core.exception.UserNotFoundException;
+import edu.eci.dosw.tdd.core.model.Role;
 import edu.eci.dosw.tdd.core.model.User;
 import edu.eci.dosw.tdd.core.validator.UserValidator;
+import edu.eci.dosw.tdd.persistence.dao.UserEntity;
+import edu.eci.dosw.tdd.persistence.mapper.UserEntityMapper;
+import edu.eci.dosw.tdd.persistence.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class UserService {
 
-    private final Map<String, User> usersById = new LinkedHashMap<>();
+    private final UserRepository userRepository;
     private final UserValidator userValidator = new UserValidator();
 
-    public UserService() {
-        User user1 = new User();
-        user1.setId("u1");
-        user1.setName("Ana");
-        usersById.put(user1.getId(), user1);
-
-        User user2 = new User();
-        user2.setId("u2");
-        user2.setName("Luis");
-        usersById.put(user2.getId(), user2);
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
-    public List<User> getUsers() {
-        return new ArrayList<>(usersById.values());
+    public List<User> getUsers(String actorUserId) {
+        assertLibrarian(actorUserId);
+        return userRepository.findAll().stream().map(UserEntityMapper::toDomain).toList();
     }
 
-    public User getUserById(String userId) {
+    public User getUserById(String actorUserId, String userId) {
         String validUserId = userValidator.validateUserId(userId);
-        User user = usersById.get(validUserId);
-        if (user == null) {
-            throw new UserNotFoundException("No se encontro usuario con ID: " + validUserId);
+        if (!actorUserId.equals(validUserId) && !isLibrarian(actorUserId)) {
+            throw new ForbiddenOperationException("Solo puede consultar su propio perfil.");
         }
-        return user;
+        return userRepository.findById(validUserId)
+                .map(UserEntityMapper::toDomain)
+                .orElseThrow(() -> new UserNotFoundException("No se encontro usuario con ID: " + validUserId));
+    }
+
+    public User registerUser(String id, String name, String username, String password) {
+        return createUserInternal(id, name, username, password, Role.USER);
+    }
+
+    public User createUserByLibrarian(String actorUserId, String id, String name, String username, String password, String role) {
+        assertLibrarian(actorUserId);
+        Role parsedRole = parseRole(role);
+        return createUserInternal(id, name, username, password, parsedRole);
+    }
+
+    private User createUserInternal(String id, String name, String username, String password, Role role) {
+        String validUserId = userValidator.validateUserId(id);
+        if (userRepository.existsById(validUserId)) {
+            throw new IllegalArgumentException("Ya existe un usuario con ID: " + validUserId);
+        }
+
+        String validUsername = requireText(username, "username");
+        if (userRepository.findByUsername(validUsername).isPresent()) {
+            throw new IllegalArgumentException("El username ya existe: " + validUsername);
+        }
+
+        UserEntity entity = new UserEntity();
+        entity.setId(validUserId);
+        entity.setName(requireText(name, "name"));
+        entity.setUsername(validUsername);
+        entity.setPassword(requireText(password, "password"));
+        entity.setRole(role);
+
+        return UserEntityMapper.toDomain(userRepository.save(entity));
+    }
+
+    public boolean isLibrarian(String userId) {
+        UserEntity actor = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("No se encontro usuario con ID: " + userId));
+        return actor.getRole() == Role.LIBRARIAN;
+    }
+
+    private void assertLibrarian(String actorUserId) {
+        if (!isLibrarian(actorUserId)) {
+            throw new ForbiddenOperationException("Solo un bibliotecario puede gestionar usuarios.");
+        }
+    }
+
+    private Role parseRole(String role) {
+        if (role == null || role.isBlank()) {
+            return Role.USER;
+        }
+        try {
+            return Role.valueOf(role.toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("Rol invalido: " + role);
+        }
+    }
+
+    private String requireText(String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("El campo '" + fieldName + "' es obligatorio.");
+        }
+        return value;
     }
 }
-

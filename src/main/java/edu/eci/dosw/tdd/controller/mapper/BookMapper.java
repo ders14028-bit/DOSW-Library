@@ -8,8 +8,14 @@ public final class BookMapper {
     private BookMapper() {
     }
 
-    public static BookDTO toDto(Book book, Integer availableCopies) {
-        return new BookDTO(book.getId(), book.getTitle(), book.getAuthor(), availableCopies);
+    public static BookDTO toDto(Book book) {
+        return new BookDTO(
+                book.getId(),
+                book.getTitle(),
+                book.getAuthor(),
+                book.getTotalCopies(),
+                book.getAvailableCopies()
+        );
     }
 }
 

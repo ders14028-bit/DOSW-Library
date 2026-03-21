@@ -1,59 +1,118 @@
 package edu.eci.dosw.tdd.core.service;
 
+import edu.eci.dosw.tdd.core.exception.BookNotAvailableException;
+import edu.eci.dosw.tdd.core.exception.ForbiddenOperationException;
 import edu.eci.dosw.tdd.core.model.Book;
+import edu.eci.dosw.tdd.core.model.Role;
 import edu.eci.dosw.tdd.core.validator.BookValidator;
+import edu.eci.dosw.tdd.persistence.dao.BookEntity;
+import edu.eci.dosw.tdd.persistence.dao.UserEntity;
+import edu.eci.dosw.tdd.persistence.mapper.BookEntityMapper;
+import edu.eci.dosw.tdd.persistence.repository.BookRepository;
+import edu.eci.dosw.tdd.persistence.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.List;
 
 @Service
 public class BookService {
 
-    private final Map<String, Book> booksById = new LinkedHashMap<>();
-    private final Map<String, Integer> inventoryByBookId = new LinkedHashMap<>();
+    private final BookRepository bookRepository;
+    private final UserRepository userRepository;
     private final BookValidator bookValidator = new BookValidator();
 
-    public BookService() {
-        Book book1 = new Book();
-        book1.setId("b1");
-        book1.setTitle("Clean Code");
-        book1.setAuthor("Robert C. Martin");
-        booksById.put(book1.getId(), book1);
-        inventoryByBookId.put(book1.getId(), 2);
-
-        Book book2 = new Book();
-        book2.setId("b2");
-        book2.setTitle("Domain-Driven Design");
-        book2.setAuthor("Eric Evans");
-        booksById.put(book2.getId(), book2);
-        inventoryByBookId.put(book2.getId(), 1);
+    public BookService(BookRepository bookRepository, UserRepository userRepository) {
+        this.bookRepository = bookRepository;
+        this.userRepository = userRepository;
     }
 
-    public Map<String, Integer> getInventory() {
-        return Collections.unmodifiableMap(inventoryByBookId);
+    public List<Book> getInventory() {
+        return bookRepository.findAll().stream().map(BookEntityMapper::toDomain).toList();
     }
 
     public Book getBookById(String bookId) {
         String validBookId = bookValidator.validateBookId(bookId);
-        Book book = booksById.get(validBookId);
-        if (book == null) {
-            throw new IllegalArgumentException("No se encontro libro con ID: " + validBookId);
-        }
-        return book;
+        return bookRepository.findById(validBookId)
+                .map(BookEntityMapper::toDomain)
+                .orElseThrow(() -> new IllegalArgumentException("No se encontro libro con ID: " + validBookId));
     }
 
-    public int getAvailableCopies(String bookId) {
-        return inventoryByBookId.get(bookId);
+    public Book createBook(String actorUserId, String id, String title, String author, Integer totalCopies, Integer availableCopies) {
+        assertLibrarian(actorUserId);
+        validateBookStock(totalCopies, availableCopies);
+
+        String validBookId = bookValidator.validateBookId(id);
+        if (bookRepository.existsById(validBookId)) {
+            throw new IllegalArgumentException("Ya existe un libro con ID: " + validBookId);
+        }
+
+        BookEntity entity = new BookEntity();
+        entity.setId(validBookId);
+        entity.setTitle(requireText(title, "title"));
+        entity.setAuthor(requireText(author, "author"));
+        entity.setTotalCopies(totalCopies);
+        entity.setAvailableCopies(availableCopies);
+
+        return BookEntityMapper.toDomain(bookRepository.save(entity));
+    }
+
+    public Book updateBookStock(String actorUserId, String bookId, Integer totalCopies, Integer availableCopies) {
+        assertLibrarian(actorUserId);
+        validateBookStock(totalCopies, availableCopies);
+
+        String validBookId = bookValidator.validateBookId(bookId);
+        BookEntity entity = bookRepository.findById(validBookId)
+                .orElseThrow(() -> new IllegalArgumentException("No se encontro libro con ID: " + validBookId));
+
+        entity.setTotalCopies(totalCopies);
+        entity.setAvailableCopies(availableCopies);
+        return BookEntityMapper.toDomain(bookRepository.save(entity));
     }
 
     public void decrementInventory(String bookId) {
-        inventoryByBookId.put(bookId, inventoryByBookId.get(bookId) - 1);
+        BookEntity entity = bookRepository.findById(bookId)
+                .orElseThrow(() -> new IllegalArgumentException("No se encontro libro con ID: " + bookId));
+        if (entity.getAvailableCopies() <= 0) {
+            throw new BookNotAvailableException(bookId);
+        }
+        entity.setAvailableCopies(entity.getAvailableCopies() - 1);
+        bookRepository.save(entity);
     }
 
     public void incrementInventory(String bookId) {
-        inventoryByBookId.put(bookId, inventoryByBookId.get(bookId) + 1);
+        BookEntity entity = bookRepository.findById(bookId)
+                .orElseThrow(() -> new IllegalArgumentException("No se encontro libro con ID: " + bookId));
+        if (entity.getAvailableCopies() >= entity.getTotalCopies()) {
+            throw new IllegalArgumentException("La disponibilidad no puede superar el stock total del libro.");
+        }
+        entity.setAvailableCopies(entity.getAvailableCopies() + 1);
+        bookRepository.save(entity);
+    }
+
+    private void assertLibrarian(String actorUserId) {
+        UserEntity actor = userRepository.findById(actorUserId)
+                .orElseThrow(() -> new IllegalArgumentException("No se encontro usuario con ID: " + actorUserId));
+        if (actor.getRole() != Role.LIBRARIAN) {
+            throw new ForbiddenOperationException("Solo un bibliotecario puede gestionar libros.");
+        }
+    }
+
+    private void validateBookStock(Integer totalCopies, Integer availableCopies) {
+        if (totalCopies == null || totalCopies <= 0) {
+            throw new IllegalArgumentException("La cantidad total de ejemplares debe ser mayor a 0.");
+        }
+        if (availableCopies == null || availableCopies < 0) {
+            throw new IllegalArgumentException("La cantidad de ejemplares disponibles no puede ser menor a 0.");
+        }
+        if (availableCopies > totalCopies) {
+            throw new IllegalArgumentException("La disponibilidad no puede ser mayor al stock total.");
+        }
+    }
+
+    private String requireText(String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("El campo '" + fieldName + "' es obligatorio.");
+        }
+        return value;
     }
 }
-

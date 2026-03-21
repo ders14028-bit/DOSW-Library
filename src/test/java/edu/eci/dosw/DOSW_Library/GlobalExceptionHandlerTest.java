@@ -1,6 +1,7 @@
 package edu.eci.dosw.DOSW_Library;
 
 import edu.eci.dosw.tdd.core.exception.BookNotAvailableException;
+import edu.eci.dosw.tdd.core.exception.ForbiddenOperationException;
 import edu.eci.dosw.tdd.core.exception.GlobalExceptionHandler;
 import edu.eci.dosw.tdd.core.exception.LoanLimitExceededException;
 import edu.eci.dosw.tdd.core.exception.UserNotFoundException;
@@ -50,6 +51,15 @@ class GlobalExceptionHandlerTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals("payload invalido", response.getBody().get("error"));
+    }
+
+    @Test
+    void shouldHandleForbidden() {
+        ResponseEntity<Map<String, String>> response =
+                handler.handleForbidden(new ForbiddenOperationException("accion no permitida"));
+
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+        assertEquals("accion no permitida", response.getBody().get("error"));
     }
 }
 
