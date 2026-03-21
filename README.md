@@ -8,6 +8,8 @@
 
 ## Diagrama de componentes especifico
 
+![img.png](src/main/resources/images/especifico.png)
+
 ---
 
 ## Diagrama de clases
@@ -16,17 +18,11 @@
 
 ---
 
-## Modelo Entidad-Relacion (3FN)
-
-
-
----
-
 ## Pruebas
 
 ### Pruebas unitarias
 
-![img.png](src/main/resources/images/Test.png)
+![img.png](img.png)
 
 ---
 
