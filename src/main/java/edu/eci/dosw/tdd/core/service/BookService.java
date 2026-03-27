@@ -1,12 +1,9 @@
 package edu.eci.dosw.tdd.core.service;
 
 import edu.eci.dosw.tdd.core.exception.BookNotAvailableException;
-import edu.eci.dosw.tdd.core.exception.ForbiddenOperationException;
 import edu.eci.dosw.tdd.core.model.Book;
-import edu.eci.dosw.tdd.core.model.Role;
 import edu.eci.dosw.tdd.core.validator.BookValidator;
 import edu.eci.dosw.tdd.persistence.dao.BookEntity;
-import edu.eci.dosw.tdd.persistence.dao.UserEntity;
 import edu.eci.dosw.tdd.persistence.mapper.BookEntityMapper;
 import edu.eci.dosw.tdd.persistence.repository.BookRepository;
 import edu.eci.dosw.tdd.persistence.repository.UserRepository;
@@ -37,8 +34,7 @@ public class BookService {
                 .orElseThrow(() -> new IllegalArgumentException("No se encontro libro con ID: " + validBookId));
     }
 
-    public Book createBook(String actorUserId, String id, String title, String author, Integer totalCopies, Integer availableCopies) {
-        assertLibrarian(actorUserId);
+    public Book createBook(String id, String title, String author, Integer totalCopies, Integer availableCopies) {
         validateBookStock(totalCopies, availableCopies);
 
         String validBookId = bookValidator.validateBookId(id);
@@ -56,8 +52,7 @@ public class BookService {
         return BookEntityMapper.toDomain(bookRepository.save(entity));
     }
 
-    public Book updateBookStock(String actorUserId, String bookId, Integer totalCopies, Integer availableCopies) {
-        assertLibrarian(actorUserId);
+    public Book updateBookStock(String bookId, Integer totalCopies, Integer availableCopies) {
         validateBookStock(totalCopies, availableCopies);
 
         String validBookId = bookValidator.validateBookId(bookId);
@@ -87,14 +82,6 @@ public class BookService {
         }
         entity.setAvailableCopies(entity.getAvailableCopies() + 1);
         bookRepository.save(entity);
-    }
-
-    private void assertLibrarian(String actorUserId) {
-        UserEntity actor = userRepository.findById(actorUserId)
-                .orElseThrow(() -> new IllegalArgumentException("No se encontro usuario con ID: " + actorUserId));
-        if (actor.getRole() != Role.LIBRARIAN) {
-            throw new ForbiddenOperationException("Solo un bibliotecario puede gestionar libros.");
-        }
     }
 
     private void validateBookStock(Integer totalCopies, Integer availableCopies) {

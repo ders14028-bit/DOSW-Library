@@ -88,14 +88,14 @@ class LibraryServiceTest {
 
     @Test
     void shouldReturnSeededUsersAndInventory() {
-        assertEquals(2, userService.getUsers("u2").size());
+        assertEquals(2, userService.getUsers().size());
         assertEquals(2, bookService.getBookById("b1").getAvailableCopies());
         assertEquals(1, bookService.getBookById("b2").getAvailableCopies());
     }
 
     @Test
     void shouldLoanBookSuccessfully() {
-        Loan loan = loanService.loanBook("u1", "u1", "b1");
+        Loan loan = loanService.loanBook("ana", "u1", "b1");
 
         assertEquals(Status.ACTIVE, loan.getStatus());
         assertEquals("u1", loan.getUser().getId());
@@ -105,21 +105,21 @@ class LibraryServiceTest {
 
     @Test
     void shouldFailWhenBookIsNotAvailable() {
-        loanService.loanBook("u1", "u1", "b2");
+        loanService.loanBook("ana", "u1", "b2");
 
-        assertThrows(BookNotAvailableException.class, () -> loanService.loanBook("u2", "u2", "b2"));
+        assertThrows(BookNotAvailableException.class, () -> loanService.loanBook("luis", "u2", "b2"));
     }
 
     @Test
     void shouldReturnEmptyLoansAtStart() {
-        assertTrue(loanService.getLoansByUser("u1", "u1").isEmpty());
+        assertTrue(loanService.getLoansByUser("ana", "u1").isEmpty());
     }
 
     @Test
     void shouldReturnBookSuccessfully() {
-        loanService.loanBook("u1", "u1", "b1");
+        loanService.loanBook("ana", "u1", "b1");
 
-        Loan returnedLoan = loanService.returnBook("u1", "u1", "b1");
+        Loan returnedLoan = loanService.returnBook("ana", "u1", "b1");
 
         assertEquals(Status.RETURNED, returnedLoan.getStatus());
         assertNotNull(returnedLoan.getReturnDate());
@@ -128,17 +128,17 @@ class LibraryServiceTest {
 
     @Test
     void shouldFailWhenUserExceedsActiveLoanLimit() {
-        loanService.loanBook("u1", "u1", "b1");
-        loanService.returnBook("u1", "u1", "b1");
-        loanService.loanBook("u1", "u1", "b1");
-        loanService.loanBook("u1", "u1", "b2");
-        loanService.loanBook("u1", "u1", "b1");
+        loanService.loanBook("ana", "u1", "b1");
+        loanService.returnBook("ana", "u1", "b1");
+        loanService.loanBook("ana", "u1", "b1");
+        loanService.loanBook("ana", "u1", "b2");
+        loanService.loanBook("ana", "u1", "b1");
 
-        assertThrows(LoanLimitExceededException.class, () -> loanService.loanBook("u1", "u1", "b1"));
+        assertThrows(LoanLimitExceededException.class, () -> loanService.loanBook("ana", "u1", "b1"));
     }
 
     @Test
     void shouldFailWhenReturningWithoutActiveLoan() {
-        assertThrows(IllegalArgumentException.class, () -> loanService.returnBook("u1", "u1", "b1"));
+        assertThrows(IllegalArgumentException.class, () -> loanService.returnBook("ana", "u1", "b1"));
     }
 }

@@ -3,13 +3,10 @@ package edu.eci.dosw.tdd.controller;
 import edu.eci.dosw.tdd.controller.dto.LoanDTO;
 import edu.eci.dosw.tdd.controller.mapper.LoanMapper;
 import edu.eci.dosw.tdd.core.service.LoanService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -23,26 +20,35 @@ public class LoanController {
         this.loanService = loanService;
     }
 
+    @PreAuthorize("hasRole('LIBRARIAN')")
     @GetMapping
-    public List<LoanDTO> getLoans(@RequestParam String actorUserId) {
-        return loanService.getLoans(actorUserId).stream().map(LoanMapper::toDto).toList();
+    public List<LoanDTO> getLoans() {
+        return loanService.getLoans().stream().map(LoanMapper::toDto).toList();
     }
 
+    @PreAuthorize("hasAnyRole('USER', 'LIBRARIAN')")
     @GetMapping("/user/{userId}")
-    public List<LoanDTO> getLoansByUser(@PathVariable String userId, @RequestParam String actorUserId) {
-        return loanService.getLoansByUser(actorUserId, userId).stream().map(LoanMapper::toDto).toList();
+    public List<LoanDTO> getLoansByUser(@PathVariable String userId,
+                                        @AuthenticationPrincipal UserDetails currentUser) {
+        return loanService.getLoansByUser(currentUser.getUsername(), userId)
+                .stream().map(LoanMapper::toDto).toList();
     }
 
+    @PreAuthorize("hasAnyRole('USER', 'LIBRARIAN')")
     @PostMapping("/borrow")
-    public LoanDTO borrowBook(@RequestBody LoanDTO request, @RequestParam(required = false) String actorUserId) {
-        String effectiveActor = actorUserId == null || actorUserId.isBlank() ? request.userId() : actorUserId;
-        return LoanMapper.toDto(loanService.loanBook(effectiveActor, request.userId(), request.bookId()));
+    public LoanDTO borrowBook(@RequestBody LoanDTO request,
+                              @AuthenticationPrincipal UserDetails currentUser) {
+        return LoanMapper.toDto(loanService.loanBook(
+                currentUser.getUsername(), request.userId(), request.bookId()
+        ));
     }
 
+    @PreAuthorize("hasAnyRole('USER', 'LIBRARIAN')")
     @PostMapping("/return")
-    public LoanDTO returnBook(@RequestBody LoanDTO request, @RequestParam(required = false) String actorUserId) {
-        String effectiveActor = actorUserId == null || actorUserId.isBlank() ? request.userId() : actorUserId;
-        return LoanMapper.toDto(loanService.returnBook(effectiveActor, request.userId(), request.bookId()));
+    public LoanDTO returnBook(@RequestBody LoanDTO request,
+                              @AuthenticationPrincipal UserDetails currentUser) {
+        return LoanMapper.toDto(loanService.returnBook(
+                currentUser.getUsername(), request.userId(), request.bookId()
+        ));
     }
 }
-

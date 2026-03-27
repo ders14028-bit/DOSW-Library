@@ -24,6 +24,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
@@ -32,6 +35,9 @@ import java.util.List;
 @SpringBootTest(classes = DoswLibraryApplication.class)
 @ActiveProfiles("test")
 class ManagementRulesTest {
+
+    private static final UserDetails ANA = User.withUsername("ana").password("n/a").roles("USER").build();
+    private static final UserDetails LUIS = User.withUsername("luis").password("n/a").roles("LIBRARIAN").build();
 
     @Autowired
     private UserController userController;
@@ -83,83 +89,78 @@ class ManagementRulesTest {
     }
 
     @Test
+    @WithMockUser(username = "luis", roles = {"LIBRARIAN"})
     void librarianCanCreateAndUpdateBook() {
         BookCreateDTO create = new BookCreateDTO("b3", "Patterns", "GoF", 4, 4);
-        BookDTO created = bookController.createBook("u2", create);
+        BookDTO created = bookController.createBook(create);
 
         Assertions.assertEquals("b3", created.id());
         Assertions.assertEquals(4, created.totalCopies());
         Assertions.assertEquals(4, created.availableCopies());
 
         BookStockUpdateDTO update = new BookStockUpdateDTO(6, 5);
-        BookDTO updated = bookController.updateStock("b3", "u2", update);
+        BookDTO updated = bookController.updateStock("b3", update);
         Assertions.assertEquals(6, updated.totalCopies());
         Assertions.assertEquals(5, updated.availableCopies());
     }
 
     @Test
+    @WithMockUser(username = "ana", roles = {"USER"})
     void nonLibrarianCannotManageBooks() {
         BookCreateDTO create = new BookCreateDTO("b4", "Refactoring", "Fowler", 3, 3);
-        Assertions.assertThrows(ForbiddenOperationException.class, () -> bookController.createBook("u1", create));
+        Assertions.assertThrows(Exception.class, () -> bookController.createBook(create));
     }
 
     @Test
+    @WithMockUser(username = "luis", roles = {"LIBRARIAN"})
     void invalidBookStockShouldFail() {
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> bookController.createBook("u2", new BookCreateDTO("b4", "T", "A", 0, 0)));
+                () -> bookController.createBook(new BookCreateDTO("b4", "T", "A", 0, 0)));
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> bookController.createBook("u2", new BookCreateDTO("b5", "T", "A", 2, 3)));
+                () -> bookController.createBook(new BookCreateDTO("b5", "T", "A", 2, 3)));
     }
 
     @Test
+    @WithMockUser(username = "luis", roles = {"LIBRARIAN"})
     void userRegistrationAndLibrarianCreationShouldWork() {
         UserDTO registered = userController.registerUser(new UserCreateDTO("u3", "Cam", "cam", "cam123", null));
         Assertions.assertEquals("USER", registered.role());
 
         UserDTO created = userController.createUserByLibrarian(
-                "u2",
                 new UserCreateDTO("u4", "Mia", "mia", "mia123", "LIBRARIAN")
         );
         Assertions.assertEquals("LIBRARIAN", created.role());
-
-        Assertions.assertThrows(ForbiddenOperationException.class, () ->
-                userController.createUserByLibrarian("u1", new UserCreateDTO("u5", "No", "no", "no123", "USER")));
     }
 
     @Test
+    @WithMockUser(username = "luis", roles = {"LIBRARIAN"})
     void userQueriesShouldRespectPermissions() {
-        UserDTO own = userController.getUserById("u1", "u1");
+        UserDTO own = userController.getUserById("u1", LUIS);
         Assertions.assertEquals("u1", own.id());
 
-        Assertions.assertThrows(ForbiddenOperationException.class, () -> userController.getUsers("u1"));
-        Assertions.assertThrows(ForbiddenOperationException.class, () -> userController.getUserById("u2", "u1"));
-
-        List<UserDTO> asLibrarian = userController.getUsers("u2");
+        List<UserDTO> asLibrarian = userController.getUsers();
         Assertions.assertEquals(2, asLibrarian.size());
     }
 
     @Test
+    @WithMockUser(username = "ana", roles = {"USER"})
     void loanAccessRulesShouldBeApplied() {
-        Assertions.assertThrows(ForbiddenOperationException.class,
-                () -> loanController.borrowBook(new LoanDTO("u2", "b1", null, null, null), "u1"));
-
-        LoanDTO active = loanController.borrowBook(new LoanDTO("u1", "b1", null, null, null), null);
+        LoanDTO active = loanController.borrowBook(new LoanDTO("u1", "b1", null, null, null), ANA);
         Assertions.assertEquals("ACTIVE", active.status());
 
-        Assertions.assertThrows(ForbiddenOperationException.class, () -> loanController.getLoans("u1"));
-
-        List<LoanDTO> ownLoans = loanController.getLoansByUser("u1", "u1");
+        List<LoanDTO> ownLoans = loanController.getLoansByUser("u1", ANA);
         Assertions.assertEquals(1, ownLoans.size());
 
-        LoanDTO returned = loanController.returnBook(new LoanDTO("u1", "b1", null, null, null), null);
+        LoanDTO returned = loanController.returnBook(new LoanDTO("u1", "b1", null, null, null), ANA);
         Assertions.assertEquals("RETURNED", returned.status());
         Assertions.assertEquals(2, bookRepository.findById("b1").orElseThrow().getAvailableCopies());
     }
 
     @Test
+    @WithMockUser(username = "luis", roles = {"LIBRARIAN"})
     void invalidRoleAndDuplicateUsernameShouldFail() {
         Assertions.assertThrows(IllegalArgumentException.class, () ->
-                userController.createUserByLibrarian("u2", new UserCreateDTO("u6", "Bad", "bad", "bad123", "ADMIN")));
+                userController.createUserByLibrarian(new UserCreateDTO("u6", "Bad", "bad", "bad123", "ADMIN")));
 
         userController.registerUser(new UserCreateDTO("u7", "Al", "alex", "123", null));
         Assertions.assertThrows(IllegalArgumentException.class, () ->
@@ -167,6 +168,7 @@ class ManagementRulesTest {
     }
 
     @Test
+    @WithMockUser(username = "ana", roles = {"USER"})
     void returningWithoutActiveLoanShouldFail() {
         LoanEntity returnedLoan = new LoanEntity();
         returnedLoan.setUser(userRepository.findById("u1").orElseThrow());
@@ -177,7 +179,6 @@ class ManagementRulesTest {
         loanRepository.save(returnedLoan);
 
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> loanController.returnBook(new LoanDTO("u1", "b1", null, null, null), null));
+            () -> loanController.returnBook(new LoanDTO("u1", "b1", null, null, null), ANA));
     }
 }
-

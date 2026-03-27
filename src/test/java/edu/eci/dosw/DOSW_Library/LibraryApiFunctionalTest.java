@@ -20,6 +20,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
@@ -28,6 +31,9 @@ import java.util.List;
 @SpringBootTest(classes = DoswLibraryApplication.class)
 @ActiveProfiles("test")
 class LibraryApiFunctionalTest {
+
+    private static final UserDetails ANA = User.withUsername("ana").password("n/a").roles("USER").build();
+    private static final UserDetails LUIS = User.withUsername("luis").password("n/a").roles("LIBRARIAN").build();
 
     @Autowired
     private UserController userController;
@@ -87,8 +93,9 @@ class LibraryApiFunctionalTest {
     }
 
     @Test
+    @WithMockUser(username = "luis", roles = {"LIBRARIAN"})
     void shouldGetUsersFromDatabase() {
-        List<UserDTO> users = userController.getUsers("u2");
+        List<UserDTO> users = userController.getUsers();
 
         Assertions.assertEquals(2, users.size());
         Assertions.assertEquals("u1", users.get(0).id());
@@ -96,6 +103,7 @@ class LibraryApiFunctionalTest {
     }
 
     @Test
+    @WithMockUser(username = "ana", roles = {"USER"})
     void shouldGetInventoryFromDatabase() {
         List<BookDTO> inventory = bookController.getInventory();
 
@@ -106,8 +114,9 @@ class LibraryApiFunctionalTest {
     }
 
     @Test
+    @WithMockUser(username = "ana", roles = {"USER"})
     void shouldBorrowBookAndPersistLoan() {
-        LoanDTO response = loanController.borrowBook(new LoanDTO("u1", "b1", null, null, null), null);
+        LoanDTO response = loanController.borrowBook(new LoanDTO("u1", "b1", null, null, null), ANA);
 
         Assertions.assertEquals("ACTIVE", response.status());
         Assertions.assertEquals("u1", response.userId());
@@ -121,6 +130,7 @@ class LibraryApiFunctionalTest {
     }
 
     @Test
+    @WithMockUser(username = "ana", roles = {"USER"})
     void shouldGetLoansFromDatabase() {
         UserEntity user = userRepository.findById("u1").orElseThrow();
         BookEntity book = bookRepository.findById("b1").orElseThrow();
@@ -132,7 +142,7 @@ class LibraryApiFunctionalTest {
         loan.setStatus(Status.ACTIVE);
         loanRepository.save(loan);
 
-        List<LoanDTO> loans = loanController.getLoansByUser("u1", "u1");
+        List<LoanDTO> loans = loanController.getLoansByUser("u1", ANA);
 
         Assertions.assertEquals(1, loans.size());
         Assertions.assertEquals("u1", loans.get(0).userId());
@@ -141,6 +151,7 @@ class LibraryApiFunctionalTest {
     }
 
     @Test
+    @WithMockUser(username = "ana", roles = {"USER"})
     void shouldReturnBookAndUpdateLoanInDatabase() {
         UserEntity user = userRepository.findById("u1").orElseThrow();
         BookEntity book = bookRepository.findById("b1").orElseThrow();
@@ -154,7 +165,7 @@ class LibraryApiFunctionalTest {
         loan.setStatus(Status.ACTIVE);
         LoanEntity stored = loanRepository.save(loan);
 
-        LoanDTO response = loanController.returnBook(new LoanDTO("u1", "b1", null, null, null), null);
+        LoanDTO response = loanController.returnBook(new LoanDTO("u1", "b1", null, null, null), ANA);
 
         Assertions.assertEquals("RETURNED", response.status());
         Assertions.assertNotNull(response.returnDate());
