@@ -8,6 +8,7 @@ import edu.eci.dosw.tdd.core.validator.UserValidator;
 import edu.eci.dosw.tdd.persistence.dao.UserEntity;
 import edu.eci.dosw.tdd.persistence.mapper.UserEntityMapper;
 import edu.eci.dosw.tdd.persistence.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,10 +17,12 @@ import java.util.List;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
     private final UserValidator userValidator = new UserValidator();
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public List<User> getUsers(String actorUserId) {
@@ -62,7 +65,7 @@ public class UserService {
         entity.setId(validUserId);
         entity.setName(requireText(name, "name"));
         entity.setUsername(validUsername);
-        entity.setPassword(requireText(password, "password"));
+        entity.setPassword(passwordEncoder.encode(requireText(password, "password")));
         entity.setRole(role);
 
         return UserEntityMapper.toDomain(userRepository.save(entity));
