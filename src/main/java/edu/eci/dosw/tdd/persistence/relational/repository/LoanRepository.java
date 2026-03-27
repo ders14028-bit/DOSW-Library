@@ -1,7 +1,7 @@
-package edu.eci.dosw.tdd.persistence.repository;
+package edu.eci.dosw.tdd.persistence.relational.repository;
 
 import edu.eci.dosw.tdd.core.model.Status;
-import edu.eci.dosw.tdd.persistence.dao.LoanEntity;
+import edu.eci.dosw.tdd.persistence.relational.dao.LoanEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

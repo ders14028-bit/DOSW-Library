@@ -1,25 +1,12 @@
 server:
-  port: ${SERVER_PORT:8443}
+  port: 8443
   ssl:
-    enabled: ${SSL_ENABLED:true}
-    key-store: ${SSL_KEY_STORE:classpath:keystore.p12}
-    key-store-password: ${SSL_KEY_STORE_PASSWORD:changeit}
-    key-store-type: PKCS12
-    key-alias: ${SSL_KEY_ALIAS:dosw-library}
+    enabled: false
 
 spring:
-  datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/dosw_library}
-    username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:postgres}
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: update
-    open-in-view: false
-    properties:
-      hibernate:
-        format_sql: true
+  data:
+    mongodb:
+      uri: mongodb+srv://ders14028_db_user:TU_CONTRASEÑA@cluster0.1p8nobv.mongodb.net/dosw_library
 
 application:
   security:
