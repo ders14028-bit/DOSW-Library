@@ -6,6 +6,7 @@ import edu.eci.dosw.tdd.persistence.dao.UserEntity;
 import edu.eci.dosw.tdd.persistence.repository.BookRepository;
 import edu.eci.dosw.tdd.persistence.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -13,10 +14,16 @@ public class PersistenceDataInitializer implements CommandLineRunner {
 
     private final BookRepository bookRepository;
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public PersistenceDataInitializer(BookRepository bookRepository, UserRepository userRepository) {
+    public PersistenceDataInitializer(
+            BookRepository bookRepository,
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder
+    ) {
         this.bookRepository = bookRepository;
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -45,19 +52,32 @@ public class PersistenceDataInitializer implements CommandLineRunner {
             user1.setId("u1");
             user1.setName("Ana");
             user1.setUsername("ana");
-            user1.setPassword("ana123");
+            user1.setPassword(passwordEncoder.encode("ana123"));
             user1.setRole(Role.USER);
 
             UserEntity user2 = new UserEntity();
             user2.setId("u2");
             user2.setName("Luis");
             user2.setUsername("luis");
-            user2.setPassword("luis123");
+            user2.setPassword(passwordEncoder.encode("luis123"));
             user2.setRole(Role.LIBRARIAN);
 
             userRepository.save(user1);
             userRepository.save(user2);
         }
+
+        // Backward compatibility for existing environments where users were saved with plain text password.
+        userRepository.findAll().forEach(user -> {
+            String currentPassword = user.getPassword();
+            if (currentPassword != null && !isBcryptHash(currentPassword)) {
+                user.setPassword(passwordEncoder.encode(currentPassword));
+                userRepository.save(user);
+            }
+        });
+    }
+
+    private boolean isBcryptHash(String value) {
+        return value.startsWith("$2a$") || value.startsWith("$2b$") || value.startsWith("$2y$");
     }
 }
 
