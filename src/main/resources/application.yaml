@@ -10,23 +10,13 @@ server:
 spring:
   profiles:
     active: mongo
-
-  datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/dosw_library}
-    username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:postgres}
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: update
-    open-in-view: false
-    properties:
-      hibernate:
-        format_sql: true
-
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
   data:
     mongodb:
-      uri: ${SPRING_DATA_MONGODB_URI:mongodb+srv://<usuario>:<password>@<cluster>.mongodb.net/}
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb+srv://ders14028_db_user:Ders.210021mdt@cluster0.1p8nobv.mongodb.net/?appName=Cluster0}
       database: dosw_library
 
 application:

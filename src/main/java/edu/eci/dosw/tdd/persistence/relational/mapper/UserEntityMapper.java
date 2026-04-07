@@ -5,8 +5,7 @@ import edu.eci.dosw.tdd.persistence.relational.entity.UserEntity;
 
 public final class UserEntityMapper {
 
-    private UserEntityMapper() {
-    }
+    private UserEntityMapper() {}
 
     public static User toDomain(UserEntity entity) {
         User user = new User();
@@ -17,5 +16,14 @@ public final class UserEntityMapper {
         user.setRole(entity.getRole());
         return user;
     }
-}
 
+    public static UserEntity toEntity(User user) {
+        UserEntity entity = new UserEntity();
+        entity.setId(user.getId());
+        entity.setName(user.getName());
+        entity.setUsername(user.getUsername());
+        entity.setPassword(user.getPassword());
+        entity.setRole(user.getRole());
+        return entity;
+    }
+}

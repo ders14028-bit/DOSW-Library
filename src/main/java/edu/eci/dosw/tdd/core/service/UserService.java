@@ -4,10 +4,8 @@ import edu.eci.dosw.tdd.core.exception.ForbiddenOperationException;
 import edu.eci.dosw.tdd.core.exception.UserNotFoundException;
 import edu.eci.dosw.tdd.core.model.Role;
 import edu.eci.dosw.tdd.core.model.User;
+import edu.eci.dosw.tdd.core.repository.UserRepository;
 import edu.eci.dosw.tdd.core.validator.UserValidator;
-import edu.eci.dosw.tdd.persistence.relational.entity.UserEntity;
-import edu.eci.dosw.tdd.persistence.relational.mapper.UserEntityMapper;
-import edu.eci.dosw.tdd.persistence.relational.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -26,18 +24,17 @@ public class UserService {
     }
 
     public List<User> getUsers() {
-        return userRepository.findAll().stream().map(UserEntityMapper::toDomain).toList();
+        return userRepository.findAll();
     }
 
     public User getUserById(String actorUsername, String userId) {
         String validUserId = userValidator.validateUserId(userId);
-        UserEntity actor = userRepository.findByUsername(actorUsername)
+        User actor = userRepository.findByUsername(actorUsername)
                 .orElseThrow(() -> new UserNotFoundException("No se encontro usuario: " + actorUsername));
         if (!actor.getId().equals(validUserId) && actor.getRole() != Role.LIBRARIAN) {
             throw new ForbiddenOperationException("Solo puede consultar su propio perfil.");
         }
         return userRepository.findById(validUserId)
-                .map(UserEntityMapper::toDomain)
                 .orElseThrow(() -> new UserNotFoundException("No se encontro usuario con ID: " + validUserId));
     }
 
@@ -61,14 +58,14 @@ public class UserService {
             throw new IllegalArgumentException("El username ya existe: " + validUsername);
         }
 
-        UserEntity entity = new UserEntity();
-        entity.setId(validUserId);
-        entity.setName(requireText(name, "name"));
-        entity.setUsername(validUsername);
-        entity.setPassword(passwordEncoder.encode(requireText(password, "password")));
-        entity.setRole(role);
+        User user = new User();
+        user.setId(validUserId);
+        user.setName(requireText(name, "name"));
+        user.setUsername(validUsername);
+        user.setPassword(passwordEncoder.encode(requireText(password, "password")));
+        user.setRole(role);
 
-        return UserEntityMapper.toDomain(userRepository.save(entity));
+        return userRepository.save(user);
     }
 
     public boolean isLibrarian(String username) {

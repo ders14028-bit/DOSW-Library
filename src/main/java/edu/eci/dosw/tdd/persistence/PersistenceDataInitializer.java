@@ -1,10 +1,10 @@
 package edu.eci.dosw.tdd.persistence;
 
+import edu.eci.dosw.tdd.core.model.Book;
 import edu.eci.dosw.tdd.core.model.Role;
-import edu.eci.dosw.tdd.persistence.relational.entity.BookEntity;
-import edu.eci.dosw.tdd.persistence.relational.entity.UserEntity;
-import edu.eci.dosw.tdd.persistence.relational.repository.BookRepository;
-import edu.eci.dosw.tdd.persistence.relational.repository.UserRepository;
+import edu.eci.dosw.tdd.core.model.User;
+import edu.eci.dosw.tdd.core.repository.BookRepository;
+import edu.eci.dosw.tdd.core.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -28,15 +28,15 @@ public class PersistenceDataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (bookRepository.count() == 0) {
-            BookEntity book1 = new BookEntity();
+        if (bookRepository.findAll().isEmpty()) {
+            Book book1 = new Book();
             book1.setId("b1");
             book1.setTitle("Clean Code");
             book1.setAuthor("Robert C. Martin");
             book1.setTotalCopies(2);
             book1.setAvailableCopies(2);
 
-            BookEntity book2 = new BookEntity();
+            Book book2 = new Book();
             book2.setId("b2");
             book2.setTitle("Domain-Driven Design");
             book2.setAuthor("Eric Evans");
@@ -47,15 +47,15 @@ public class PersistenceDataInitializer implements CommandLineRunner {
             bookRepository.save(book2);
         }
 
-        if (userRepository.count() == 0) {
-            UserEntity user1 = new UserEntity();
+        if (userRepository.findAll().isEmpty()) {
+            User user1 = new User();
             user1.setId("u1");
             user1.setName("Ana");
             user1.setUsername("ana");
             user1.setPassword(passwordEncoder.encode("ana123"));
             user1.setRole(Role.USER);
 
-            UserEntity user2 = new UserEntity();
+            User user2 = new User();
             user2.setId("u2");
             user2.setName("Luis");
             user2.setUsername("luis");
@@ -66,7 +66,6 @@ public class PersistenceDataInitializer implements CommandLineRunner {
             userRepository.save(user2);
         }
 
-        // Backward compatibility for existing environments where users were saved with plain text password.
         userRepository.findAll().forEach(user -> {
             String currentPassword = user.getPassword();
             if (currentPassword != null && !isBcryptHash(currentPassword)) {
@@ -80,4 +79,3 @@ public class PersistenceDataInitializer implements CommandLineRunner {
         return value.startsWith("$2a$") || value.startsWith("$2b$") || value.startsWith("$2y$");
     }
 }
-

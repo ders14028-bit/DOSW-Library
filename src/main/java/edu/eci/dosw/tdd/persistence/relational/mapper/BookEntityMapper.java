@@ -5,8 +5,7 @@ import edu.eci.dosw.tdd.persistence.relational.entity.BookEntity;
 
 public final class BookEntityMapper {
 
-    private BookEntityMapper() {
-    }
+    private BookEntityMapper() {}
 
     public static Book toDomain(BookEntity entity) {
         Book book = new Book();
@@ -17,5 +16,14 @@ public final class BookEntityMapper {
         book.setAvailableCopies(entity.getAvailableCopies());
         return book;
     }
-}
 
+    public static BookEntity toEntity(Book book) {
+        BookEntity entity = new BookEntity();
+        entity.setId(book.getId());
+        entity.setTitle(book.getTitle());
+        entity.setAuthor(book.getAuthor());
+        entity.setTotalCopies(book.getTotalCopies());
+        entity.setAvailableCopies(book.getAvailableCopies());
+        return entity;
+    }
+}
