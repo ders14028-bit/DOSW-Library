@@ -53,4 +53,4 @@ public class BookDocument {
     public LocalDate getAddedToCatalogAt() { return addedToCatalogAt; }
     public void setAddedToCatalogAt(LocalDate addedToCatalogAt) { this.addedToCatalogAt = addedToCatalogAt; }
 }
-}
+
