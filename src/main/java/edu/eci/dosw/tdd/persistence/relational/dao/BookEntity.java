@@ -1,4 +1,4 @@
-package edu.eci.dosw.tdd.persistence.dao;
+package edu.eci.dosw.tdd.persistence.relational.dao;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

@@ -3,10 +3,10 @@ package edu.eci.dosw.tdd.core.service;
 import edu.eci.dosw.tdd.core.exception.BookNotAvailableException;
 import edu.eci.dosw.tdd.core.model.Book;
 import edu.eci.dosw.tdd.core.validator.BookValidator;
-import edu.eci.dosw.tdd.persistence.dao.BookEntity;
-import edu.eci.dosw.tdd.persistence.mapper.BookEntityMapper;
-import edu.eci.dosw.tdd.persistence.repository.BookRepository;
-import edu.eci.dosw.tdd.persistence.repository.UserRepository;
+import edu.eci.dosw.tdd.persistence.relational.dao.BookEntity;
+import edu.eci.dosw.tdd.persistence.relational.mapper.BookEntityMapper;
+import edu.eci.dosw.tdd.persistence.relational.repository.BookRepository;
+import edu.eci.dosw.tdd.persistence.relational.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
