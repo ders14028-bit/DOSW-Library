@@ -8,6 +8,9 @@ server:
     key-alias: ${SSL_KEY_ALIAS:dosw-library}
 
 spring:
+  profiles:
+    active: mongo
+
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/dosw_library}
     username: ${DB_USER:postgres}
@@ -20,6 +23,11 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+  data:
+    mongodb:
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb+srv://<usuario>:<password>@<cluster>.mongodb.net/}
+      database: dosw_library
 
 application:
   security:
