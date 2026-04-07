@@ -1,7 +1,7 @@
 package edu.eci.dosw.tdd.persistence.relational.mapper;
 
 import edu.eci.dosw.tdd.core.model.Loan;
-import edu.eci.dosw.tdd.persistence.relational.dao.LoanEntity;
+import edu.eci.dosw.tdd.persistence.relational.entity.LoanEntity;
 
 public final class LoanEntityMapper {
 

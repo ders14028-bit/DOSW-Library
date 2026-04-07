@@ -5,7 +5,7 @@ import edu.eci.dosw.tdd.core.exception.UserNotFoundException;
 import edu.eci.dosw.tdd.core.model.Role;
 import edu.eci.dosw.tdd.core.model.User;
 import edu.eci.dosw.tdd.core.validator.UserValidator;
-import edu.eci.dosw.tdd.persistence.relational.dao.UserEntity;
+import edu.eci.dosw.tdd.persistence.relational.entity.UserEntity;
 import edu.eci.dosw.tdd.persistence.relational.mapper.UserEntityMapper;
 import edu.eci.dosw.tdd.persistence.relational.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;

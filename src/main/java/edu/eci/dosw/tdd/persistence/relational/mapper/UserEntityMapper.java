@@ -1,7 +1,7 @@
 package edu.eci.dosw.tdd.persistence.relational.mapper;
 
 import edu.eci.dosw.tdd.core.model.User;
-import edu.eci.dosw.tdd.persistence.relational.dao.UserEntity;
+import edu.eci.dosw.tdd.persistence.relational.entity.UserEntity;
 
 public final class UserEntityMapper {
 

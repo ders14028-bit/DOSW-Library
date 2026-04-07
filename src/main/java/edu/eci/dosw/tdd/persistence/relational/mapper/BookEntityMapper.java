@@ -1,7 +1,7 @@
 package edu.eci.dosw.tdd.persistence.relational.mapper;
 
 import edu.eci.dosw.tdd.core.model.Book;
-import edu.eci.dosw.tdd.persistence.relational.dao.BookEntity;
+import edu.eci.dosw.tdd.persistence.relational.entity.BookEntity;
 
 public final class BookEntityMapper {
 
