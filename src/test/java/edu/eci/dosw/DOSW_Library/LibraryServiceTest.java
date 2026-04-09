@@ -9,11 +9,11 @@ import edu.eci.dosw.tdd.core.model.Status;
 import edu.eci.dosw.tdd.core.service.BookService;
 import edu.eci.dosw.tdd.core.service.LoanService;
 import edu.eci.dosw.tdd.core.service.UserService;
-import edu.eci.dosw.tdd.persistence.dao.BookEntity;
-import edu.eci.dosw.tdd.persistence.dao.UserEntity;
-import edu.eci.dosw.tdd.persistence.repository.BookRepository;
-import edu.eci.dosw.tdd.persistence.repository.LoanRepository;
-import edu.eci.dosw.tdd.persistence.repository.UserRepository;
+import edu.eci.dosw.tdd.persistence.relational.entity.BookEntity;
+import edu.eci.dosw.tdd.persistence.relational.entity.UserEntity;
+import edu.eci.dosw.tdd.persistence.relational.repository.BookRepository;
+import edu.eci.dosw.tdd.persistence.relational.repository.LoanRepository;
+import edu.eci.dosw.tdd.persistence.relational.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(classes = DoswLibraryApplication.class)
-@ActiveProfiles("test")
+@ActiveProfiles({"relational", "test"})
 class LibraryServiceTest {
 
     @Autowired
@@ -88,14 +88,14 @@ class LibraryServiceTest {
 
     @Test
     void shouldReturnSeededUsersAndInventory() {
-        assertEquals(2, userService.getUsers("u2").size());
+        assertEquals(2, userService.getUsers().size());
         assertEquals(2, bookService.getBookById("b1").getAvailableCopies());
         assertEquals(1, bookService.getBookById("b2").getAvailableCopies());
     }
 
     @Test
     void shouldLoanBookSuccessfully() {
-        Loan loan = loanService.loanBook("u1", "u1", "b1");
+        Loan loan = loanService.loanBook("ana", "u1", "b1");
 
         assertEquals(Status.ACTIVE, loan.getStatus());
         assertEquals("u1", loan.getUser().getId());
@@ -105,21 +105,21 @@ class LibraryServiceTest {
 
     @Test
     void shouldFailWhenBookIsNotAvailable() {
-        loanService.loanBook("u1", "u1", "b2");
+        loanService.loanBook("ana", "u1", "b2");
 
-        assertThrows(BookNotAvailableException.class, () -> loanService.loanBook("u2", "u2", "b2"));
+        assertThrows(BookNotAvailableException.class, () -> loanService.loanBook("luis", "u2", "b2"));
     }
 
     @Test
     void shouldReturnEmptyLoansAtStart() {
-        assertTrue(loanService.getLoansByUser("u1", "u1").isEmpty());
+        assertTrue(loanService.getLoansByUser("ana", "u1").isEmpty());
     }
 
     @Test
     void shouldReturnBookSuccessfully() {
-        loanService.loanBook("u1", "u1", "b1");
+        loanService.loanBook("ana", "u1", "b1");
 
-        Loan returnedLoan = loanService.returnBook("u1", "u1", "b1");
+        Loan returnedLoan = loanService.returnBook("ana", "u1", "b1");
 
         assertEquals(Status.RETURNED, returnedLoan.getStatus());
         assertNotNull(returnedLoan.getReturnDate());
@@ -128,17 +128,17 @@ class LibraryServiceTest {
 
     @Test
     void shouldFailWhenUserExceedsActiveLoanLimit() {
-        loanService.loanBook("u1", "u1", "b1");
-        loanService.returnBook("u1", "u1", "b1");
-        loanService.loanBook("u1", "u1", "b1");
-        loanService.loanBook("u1", "u1", "b2");
-        loanService.loanBook("u1", "u1", "b1");
+        loanService.loanBook("ana", "u1", "b1");
+        loanService.returnBook("ana", "u1", "b1");
+        loanService.loanBook("ana", "u1", "b1");
+        loanService.loanBook("ana", "u1", "b2");
+        loanService.loanBook("ana", "u1", "b1");
 
-        assertThrows(LoanLimitExceededException.class, () -> loanService.loanBook("u1", "u1", "b1"));
+        assertThrows(LoanLimitExceededException.class, () -> loanService.loanBook("ana", "u1", "b1"));
     }
 
     @Test
     void shouldFailWhenReturningWithoutActiveLoan() {
-        assertThrows(IllegalArgumentException.class, () -> loanService.returnBook("u1", "u1", "b1"));
+        assertThrows(IllegalArgumentException.class, () -> loanService.returnBook("ana", "u1", "b1"));
     }
 }

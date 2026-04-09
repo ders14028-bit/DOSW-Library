@@ -4,18 +4,16 @@ import edu.eci.dosw.tdd.core.exception.BookNotAvailableException;
 import edu.eci.dosw.tdd.core.exception.ForbiddenOperationException;
 import edu.eci.dosw.tdd.core.exception.LoanLimitExceededException;
 import edu.eci.dosw.tdd.core.exception.UserNotFoundException;
+import edu.eci.dosw.tdd.core.model.Book;
 import edu.eci.dosw.tdd.core.model.Loan;
 import edu.eci.dosw.tdd.core.model.Role;
 import edu.eci.dosw.tdd.core.model.Status;
+import edu.eci.dosw.tdd.core.model.User;
+import edu.eci.dosw.tdd.core.repository.BookRepository;
+import edu.eci.dosw.tdd.core.repository.LoanRepository;
+import edu.eci.dosw.tdd.core.repository.UserRepository;
 import edu.eci.dosw.tdd.core.util.DateUtil;
 import edu.eci.dosw.tdd.core.validator.LoanValidator;
-import edu.eci.dosw.tdd.persistence.dao.BookEntity;
-import edu.eci.dosw.tdd.persistence.dao.LoanEntity;
-import edu.eci.dosw.tdd.persistence.dao.UserEntity;
-import edu.eci.dosw.tdd.persistence.mapper.LoanEntityMapper;
-import edu.eci.dosw.tdd.persistence.repository.BookRepository;
-import edu.eci.dosw.tdd.persistence.repository.LoanRepository;
-import edu.eci.dosw.tdd.persistence.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -44,82 +42,70 @@ public class LoanService {
         this.loanValidator = new LoanValidator();
     }
 
-    public List<Loan> getLoans(String actorUserId) {
-        assertLibrarian(actorUserId);
-        return loanRepository.findAllByOrderByLoanDateDesc().stream().map(LoanEntityMapper::toDomain).toList();
+    public List<Loan> getLoans() {
+        return loanRepository.findAllOrderByLoanDateDesc();
     }
 
-    public List<Loan> getLoansByUser(String actorUserId, String userId) {
-        validateAccess(actorUserId, userId);
-        return loanRepository.findAllByUser_IdOrderByLoanDateDesc(userId).stream().map(LoanEntityMapper::toDomain).toList();
+    public List<Loan> getLoansByUser(String actorUsername, String userId) {
+        validateAccess(actorUsername, userId);
+        return loanRepository.findAllByUserIdOrderByLoanDateDesc(userId);
     }
 
-    public Loan loanBook(String actorUserId, String userId, String bookId) {
+    public Loan loanBook(String actorUsername, String userId, String bookId) {
         loanValidator.validateLoanRequest(userId, bookId);
-        validateAccess(actorUserId, userId);
+        validateAccess(actorUsername, userId);
 
-        UserEntity userEntity = userRepository.findById(userId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("No se encontro usuario con ID: " + userId));
-        BookEntity bookEntity = bookRepository.findById(bookId)
+        Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new IllegalArgumentException("No se encontro libro con ID: " + bookId));
 
-        long activeLoansByUser = loanRepository.countByUser_IdAndStatus(userId, Status.ACTIVE);
+        long activeLoansByUser = loanRepository.countByUserIdAndStatus(userId, Status.ACTIVE);
         if (activeLoansByUser >= MAX_ACTIVE_LOANS) {
             throw new LoanLimitExceededException(userId, MAX_ACTIVE_LOANS);
         }
 
-        if (bookEntity.getAvailableCopies() <= 0) {
+        if (book.getAvailableCopies() <= 0) {
             throw new BookNotAvailableException(bookId);
         }
 
-        LoanEntity loanEntity = new LoanEntity();
-        loanEntity.setUser(userEntity);
-        loanEntity.setBook(bookEntity);
-        loanEntity.setLoanDate(DateUtil.today());
-        loanEntity.setStatus(Status.ACTIVE);
+        Loan loan = new Loan();
+        loan.setUser(user);
+        loan.setBook(book);
+        loan.setLoanDate(DateUtil.today());
+        loan.setStatus(Status.ACTIVE);
 
-        LoanEntity saved = loanRepository.save(loanEntity);
+        Loan saved = loanRepository.save(loan);
         bookService.decrementInventory(bookId);
-        return LoanEntityMapper.toDomain(saved);
+        return saved;
     }
 
-    public Loan returnBook(String actorUserId, String userId, String bookId) {
+    public Loan returnBook(String actorUsername, String userId, String bookId) {
         loanValidator.validateLoanRequest(userId, bookId);
-        validateAccess(actorUserId, userId);
+        validateAccess(actorUsername, userId);
 
         userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("No se encontro usuario con ID: " + userId));
         bookRepository.findById(bookId)
                 .orElseThrow(() -> new IllegalArgumentException("No se encontro libro con ID: " + bookId));
 
-        LoanEntity loanEntity = loanRepository
-                .findFirstByUser_IdAndBook_IdAndStatusOrderByLoanDateAsc(userId, bookId, Status.ACTIVE)
+        Loan loan = loanRepository.findFirstByUserIdAndBookIdAndStatus(userId, bookId, Status.ACTIVE)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "No existe un prestamo activo para el usuario y libro indicados."));
 
-        loanEntity.setStatus(Status.RETURNED);
-        loanEntity.setReturnDate(DateUtil.today());
+        loan.setStatus(Status.RETURNED);
+        loan.setReturnDate(DateUtil.today());
 
-        LoanEntity saved = loanRepository.save(loanEntity);
+        Loan saved = loanRepository.save(loan);
         bookService.incrementInventory(bookId);
-        return LoanEntityMapper.toDomain(saved);
+        return saved;
     }
 
-    private void validateAccess(String actorUserId, String userId) {
-        if (!actorUserId.equals(userId) && !isLibrarian(actorUserId)) {
+    private void validateAccess(String actorUsername, String userId) {
+        User actor = userRepository.findByUsername(actorUsername)
+                .orElseThrow(() -> new UserNotFoundException("No se encontro usuario: " + actorUsername));
+        if (!actor.getId().equals(userId) && actor.getRole() != Role.LIBRARIAN) {
             throw new ForbiddenOperationException("Solo puede gestionar sus propios prestamos.");
-        }
-    }
-
-    private boolean isLibrarian(String userId) {
-        UserEntity actor = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("No se encontro usuario con ID: " + userId));
-        return actor.getRole() == Role.LIBRARIAN;
-    }
-
-    private void assertLibrarian(String actorUserId) {
-        if (!isLibrarian(actorUserId)) {
-            throw new ForbiddenOperationException("Solo un bibliotecario puede consultar todos los prestamos.");
         }
     }
 }
