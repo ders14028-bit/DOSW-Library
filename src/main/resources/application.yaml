@@ -11,9 +11,9 @@ application:
       expiration: 86400000
 
 server:
-  port: ${SERVER_PORT:8443}
+  port: ${SERVER_PORT:80}
   ssl:
-    enabled: true
+    enabled: false
     key-store: classpath:keystore.p12
     key-store-password: changeit
     key-store-type: PKCS12
