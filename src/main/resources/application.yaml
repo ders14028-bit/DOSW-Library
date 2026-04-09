@@ -1,17 +1,56 @@
-server:
-  port: ${SERVER_PORT:8081}
-
 spring:
+  application:
+    name: DOSW-Library
+  profiles:
+    active: mongo
+
+application:
+  security:
+    jwt:
+      secret-key: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      expiration: 86400000
+
+server:
+  port: ${SERVER_PORT:8443}
+  ssl:
+    enabled: true
+    key-store: classpath:keystore.p12
+    key-store-password: changeit
+    key-store-type: PKCS12
+    key-alias: dosw-library
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+---
+spring:
+  config:
+    activate:
+      on-profile: mongo
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
+  data:
+    mongodb:
+      uri: mongodb+srv://ders14028_db_user:Ders.210021@cluster0.1p8nobv.mongodb.net/?appName=Cluster0
+      database: dosw_library
+
+---
+spring:
+  config:
+    activate:
+      on-profile: relational
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/dosw_library}
-    username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:postgres}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/dosw_library}
+    username: ${SPRING_DATASOURCE_USERNAME:dosw_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:dosw_pass}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
-    open-in-view: false
-    properties:
-      hibernate:
-        format_sql: true
-
+    show-sql: true

@@ -1,63 +1,91 @@
 package edu.eci.dosw.tdd.persistence;
 
+import edu.eci.dosw.tdd.core.model.Book;
 import edu.eci.dosw.tdd.core.model.Role;
-import edu.eci.dosw.tdd.persistence.dao.BookEntity;
-import edu.eci.dosw.tdd.persistence.dao.UserEntity;
-import edu.eci.dosw.tdd.persistence.repository.BookRepository;
-import edu.eci.dosw.tdd.persistence.repository.UserRepository;
+import edu.eci.dosw.tdd.core.model.User;
+import edu.eci.dosw.tdd.core.repository.BookRepository;
+import edu.eci.dosw.tdd.core.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
 public class PersistenceDataInitializer implements CommandLineRunner {
 
+    private static final Logger log = LoggerFactory.getLogger(PersistenceDataInitializer.class);
+
     private final BookRepository bookRepository;
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public PersistenceDataInitializer(BookRepository bookRepository, UserRepository userRepository) {
+    public PersistenceDataInitializer(
+            BookRepository bookRepository,
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder
+    ) {
         this.bookRepository = bookRepository;
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     public void run(String... args) {
-        if (bookRepository.count() == 0) {
-            BookEntity book1 = new BookEntity();
-            book1.setId("b1");
-            book1.setTitle("Clean Code");
-            book1.setAuthor("Robert C. Martin");
-            book1.setTotalCopies(2);
-            book1.setAvailableCopies(2);
+        try {
+            if (bookRepository.findAll().isEmpty()) {
+                Book book1 = new Book();
+                book1.setId("b1");
+                book1.setTitle("Clean Code");
+                book1.setAuthor("Robert C. Martin");
+                book1.setTotalCopies(2);
+                book1.setAvailableCopies(2);
 
-            BookEntity book2 = new BookEntity();
-            book2.setId("b2");
-            book2.setTitle("Domain-Driven Design");
-            book2.setAuthor("Eric Evans");
-            book2.setTotalCopies(1);
-            book2.setAvailableCopies(1);
+                Book book2 = new Book();
+                book2.setId("b2");
+                book2.setTitle("Domain-Driven Design");
+                book2.setAuthor("Eric Evans");
+                book2.setTotalCopies(1);
+                book2.setAvailableCopies(1);
 
-            bookRepository.save(book1);
-            bookRepository.save(book2);
-        }
+                bookRepository.save(book1);
+                bookRepository.save(book2);
+                log.info("Initial books loaded.");
+            }
 
-        if (userRepository.count() == 0) {
-            UserEntity user1 = new UserEntity();
-            user1.setId("u1");
-            user1.setName("Ana");
-            user1.setUsername("ana");
-            user1.setPassword("ana123");
-            user1.setRole(Role.USER);
+            if (userRepository.findAll().isEmpty()) {
+                User user1 = new User();
+                user1.setId("u1");
+                user1.setName("Ana");
+                user1.setUsername("ana");
+                user1.setPassword(passwordEncoder.encode("ana123"));
+                user1.setRole(Role.USER);
 
-            UserEntity user2 = new UserEntity();
-            user2.setId("u2");
-            user2.setName("Luis");
-            user2.setUsername("luis");
-            user2.setPassword("luis123");
-            user2.setRole(Role.LIBRARIAN);
+                User user2 = new User();
+                user2.setId("u2");
+                user2.setName("Luis");
+                user2.setUsername("luis");
+                user2.setPassword(passwordEncoder.encode("luis123"));
+                user2.setRole(Role.LIBRARIAN);
 
-            userRepository.save(user1);
-            userRepository.save(user2);
+                userRepository.save(user1);
+                userRepository.save(user2);
+                log.info("Initial users loaded.");
+            }
+
+            userRepository.findAll().forEach(user -> {
+                String currentPassword = user.getPassword();
+                if (currentPassword != null && !isBcryptHash(currentPassword)) {
+                    user.setPassword(passwordEncoder.encode(currentPassword));
+                    userRepository.save(user);
+                }
+            });
+        } catch (Exception e) {
+            log.warn("Could not initialize data: {}. The app will still start.", e.getMessage());
         }
     }
-}
 
+    private boolean isBcryptHash(String value) {
+        return value.startsWith("$2a$") || value.startsWith("$2b$") || value.startsWith("$2y$");
+    }
+}

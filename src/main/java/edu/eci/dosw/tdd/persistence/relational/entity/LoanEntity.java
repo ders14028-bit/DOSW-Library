@@ -1,4 +1,4 @@
-package edu.eci.dosw.tdd.persistence.dao;
+package edu.eci.dosw.tdd.persistence.relational.entity;
 
 import edu.eci.dosw.tdd.core.model.Status;
 import jakarta.persistence.Column;

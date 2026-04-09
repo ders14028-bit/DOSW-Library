@@ -4,10 +4,9 @@ import edu.eci.dosw.tdd.core.exception.ForbiddenOperationException;
 import edu.eci.dosw.tdd.core.exception.UserNotFoundException;
 import edu.eci.dosw.tdd.core.model.Role;
 import edu.eci.dosw.tdd.core.model.User;
+import edu.eci.dosw.tdd.core.repository.UserRepository;
 import edu.eci.dosw.tdd.core.validator.UserValidator;
-import edu.eci.dosw.tdd.persistence.dao.UserEntity;
-import edu.eci.dosw.tdd.persistence.mapper.UserEntityMapper;
-import edu.eci.dosw.tdd.persistence.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,24 +15,26 @@ import java.util.List;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
     private final UserValidator userValidator = new UserValidator();
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    public List<User> getUsers(String actorUserId) {
-        assertLibrarian(actorUserId);
-        return userRepository.findAll().stream().map(UserEntityMapper::toDomain).toList();
+    public List<User> getUsers() {
+        return userRepository.findAll();
     }
 
-    public User getUserById(String actorUserId, String userId) {
+    public User getUserById(String actorUsername, String userId) {
         String validUserId = userValidator.validateUserId(userId);
-        if (!actorUserId.equals(validUserId) && !isLibrarian(actorUserId)) {
+        User actor = userRepository.findByUsername(actorUsername)
+                .orElseThrow(() -> new UserNotFoundException("No se encontro usuario: " + actorUsername));
+        if (!actor.getId().equals(validUserId) && actor.getRole() != Role.LIBRARIAN) {
             throw new ForbiddenOperationException("Solo puede consultar su propio perfil.");
         }
         return userRepository.findById(validUserId)
-                .map(UserEntityMapper::toDomain)
                 .orElseThrow(() -> new UserNotFoundException("No se encontro usuario con ID: " + validUserId));
     }
 
@@ -41,8 +42,7 @@ public class UserService {
         return createUserInternal(id, name, username, password, Role.USER);
     }
 
-    public User createUserByLibrarian(String actorUserId, String id, String name, String username, String password, String role) {
-        assertLibrarian(actorUserId);
+    public User createUserByLibrarian(String id, String name, String username, String password, String role) {
         Role parsedRole = parseRole(role);
         return createUserInternal(id, name, username, password, parsedRole);
     }
@@ -58,26 +58,20 @@ public class UserService {
             throw new IllegalArgumentException("El username ya existe: " + validUsername);
         }
 
-        UserEntity entity = new UserEntity();
-        entity.setId(validUserId);
-        entity.setName(requireText(name, "name"));
-        entity.setUsername(validUsername);
-        entity.setPassword(requireText(password, "password"));
-        entity.setRole(role);
+        User user = new User();
+        user.setId(validUserId);
+        user.setName(requireText(name, "name"));
+        user.setUsername(validUsername);
+        user.setPassword(passwordEncoder.encode(requireText(password, "password")));
+        user.setRole(role);
 
-        return UserEntityMapper.toDomain(userRepository.save(entity));
+        return userRepository.save(user);
     }
 
-    public boolean isLibrarian(String userId) {
-        UserEntity actor = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("No se encontro usuario con ID: " + userId));
-        return actor.getRole() == Role.LIBRARIAN;
-    }
-
-    private void assertLibrarian(String actorUserId) {
-        if (!isLibrarian(actorUserId)) {
-            throw new ForbiddenOperationException("Solo un bibliotecario puede gestionar usuarios.");
-        }
+    public boolean isLibrarian(String username) {
+        return userRepository.findByUsername(username)
+                .map(u -> u.getRole() == Role.LIBRARIAN)
+                .orElse(false);
     }
 
     private Role parseRole(String role) {
