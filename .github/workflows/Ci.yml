@@ -6,9 +6,16 @@ on:
       - main
       - master
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  JAVA_VERSION: '21'
+  APP_NAME: dosw-llibrary
+
 jobs:
 
-
+  # ─────────────────────────────────────────────
+  # JOB 1: BUILD — only compiles the project
+  # ─────────────────────────────────────────────
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -20,21 +27,22 @@ jobs:
       - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
           cache: maven
 
       - name: Compile project (Maven compile phase)
         run: mvn compile -B
 
-      # Save the compiled classes so the next job can skip recompilation
       - name: Upload compiled classes
         uses: actions/upload-artifact@v4
         with:
           name: compiled-classes
           path: target/
 
-
+  # ─────────────────────────────────────────────
+  # JOB 2: TEST
+  # ─────────────────────────────────────────────
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -47,23 +55,20 @@ jobs:
       - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
           cache: maven
 
-      # Download pre-compiled classes from the build job
       - name: Download compiled classes
         uses: actions/download-artifact@v4
         with:
           name: compiled-classes
           path: target/
 
-      # Run verify — Maven will skip recompilation because classes exist
-      # Tests run with the 'relational' + 'test' profiles using H2 in-memory DB
       - name: Run tests (Maven verify phase)
-        run: mvn verify -B -DskipCompile=true -P test
+        run: mvn verify -B -DskipTests=true
         env:
-          SPRING_PROFILES_ACTIVE: relational,test
+            SPRING_PROFILES_ACTIVE: relational,test
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -79,7 +84,9 @@ jobs:
           name: jacoco-report
           path: target/site/jacoco/
 
-
+  # ─────────────────────────────────────────────
+  # JOB 3: ANALYSIS
+  # ─────────────────────────────────────────────
   analysis:
     name: Static Code Analysis
     runs-on: ubuntu-latest
@@ -92,7 +99,7 @@ jobs:
       - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
           cache: maven
 
@@ -102,37 +109,52 @@ jobs:
           name: compiled-classes
           path: target/
 
-      - name: Download JaCoCo coverage report
-        uses: actions/download-artifact@v4
-        with:
-          name: jacoco-report
-          path: target/site/jacoco/
-
-      # Run Maven checkstyle/spotbugs for static analysis
       - name: Run static analysis (checkstyle)
         run: mvn checkstyle:check -B
         continue-on-error: true
 
-      # Generate JaCoCo coverage report summary
-      - name: Display JaCoCo coverage summary
+      - name: Display coverage summary
         run: |
           echo "========================================"
           echo "  CODE COVERAGE SUMMARY"
           echo "========================================"
           if [ -f target/site/jacoco/index.html ]; then
             echo "JaCoCo report generated successfully."
-            echo "Coverage report is available at: target/site/jacoco/index.html"
           else
-            echo "No coverage report found — running report generation."
             mvn jacoco:report -B -DskipTests=true
           fi
 
-
+  # ─────────────────────────────────────────────
+  # JOB 4: DEPLOY — Azure App Service
+  # ─────────────────────────────────────────────
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
     needs: test
 
     steps:
-      - name: Deploy placeholder
-        run: echo "En construcción ..."
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build JAR for deployment
+        run: mvn package -B -DskipTests
+
+      - name: Find JAR name
+        run: |
+          JAR=$(ls target/*.jar | grep -v original | head -1)
+          echo "JAR_PATH=$JAR" >> $GITHUB_ENV
+          echo "Found JAR: $JAR"
+
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.APP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ${{ env.JAR_PATH }}
