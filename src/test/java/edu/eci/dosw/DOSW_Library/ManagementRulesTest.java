@@ -32,7 +32,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @SpringBootTest(classes = DoswLibraryApplication.class)
-@ActiveProfiles("test")
+@ActiveProfiles({"relational", "test"})
 class ManagementRulesTest {
 
     private static final UserDetails ANA = User.withUsername("ana").password("n/a").roles("USER").build();
@@ -178,6 +178,6 @@ class ManagementRulesTest {
         loanRepository.save(returnedLoan);
 
         Assertions.assertThrows(IllegalArgumentException.class,
-            () -> loanController.returnBook(new LoanDTO("u1", "b1", null, null, null), ANA));
+                () -> loanController.returnBook(new LoanDTO("u1", "b1", null, null, null), ANA));
     }
 }

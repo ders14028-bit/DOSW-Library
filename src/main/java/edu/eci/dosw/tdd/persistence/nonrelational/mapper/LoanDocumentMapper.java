@@ -14,7 +14,7 @@ public final class LoanDocumentMapper {
 
     public static Loan toDomain(LoanDocument doc) {
         Loan loan = new Loan();
-
+        loan.setId(doc.getId());
         Book book = new Book();
         book.setId(doc.getBookId());
         loan.setBook(book);

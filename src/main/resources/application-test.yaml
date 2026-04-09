@@ -1,11 +1,15 @@
 server:
-  port: 8443
+  port: 8080
   ssl:
     enabled: false
 
 spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration
   datasource:
-    url: jdbc:h2:mem:dosw_library_runtime;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    url: jdbc:h2:mem:dosw_library_test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
     driver-class-name: org.h2.Driver
     username: sa
     password:
@@ -13,9 +17,6 @@ spring:
     hibernate:
       ddl-auto: create-drop
     open-in-view: false
-    properties:
-      hibernate:
-        format_sql: true
 
 application:
   security:
