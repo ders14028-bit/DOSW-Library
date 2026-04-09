@@ -25,7 +25,7 @@ jobs:
           cache: maven
 
       - name: Compile project (Maven compile phase)
-        run: mvnw compile -B
+        run: mvn compile -B
 
       # Save the compiled classes so the next job can skip recompilation
       - name: Upload compiled classes
@@ -61,7 +61,7 @@ jobs:
       # Run verify — Maven will skip recompilation because classes exist
       # Tests run with the 'relational' + 'test' profiles using H2 in-memory DB
       - name: Run tests (Maven verify phase)
-        run: mvnw verify -B -DskipCompile=true -P test
+        run: mvn verify -B -DskipCompile=true -P test
         env:
           SPRING_PROFILES_ACTIVE: relational,test
 
@@ -110,7 +110,7 @@ jobs:
 
       # Run Maven checkstyle/spotbugs for static analysis
       - name: Run static analysis (checkstyle)
-        run: mvnw checkstyle:check -B
+        run: mvn checkstyle:check -B
         continue-on-error: true
 
       # Generate JaCoCo coverage report summary
@@ -124,7 +124,7 @@ jobs:
             echo "Coverage report is available at: target/site/jacoco/index.html"
           else
             echo "No coverage report found — running report generation."
-            mvnw jacoco:report -B -DskipTests=true
+            mvn jacoco:report -B -DskipTests=true
           fi
 
 
