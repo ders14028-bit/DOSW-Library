@@ -2,7 +2,7 @@ spring:
   application:
     name: DOSW-Library
   profiles:
-    active: relational
+    active: mongo
 
 application:
   security:

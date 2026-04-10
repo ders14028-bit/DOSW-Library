@@ -145,6 +145,17 @@
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
 				<version>${jacoco.version}</version>
+				<configuration>
+					<excludes>
+						<exclude>edu/eci/dosw/tdd/persistence/nonrelational/**</exclude>
+						<exclude>edu/eci/dosw/tdd/persistence/dao/**</exclude>
+						<exclude>edu/eci/dosw/tdd/persistence/mapper/**</exclude>
+						<exclude>edu/eci/dosw/tdd/security/**</exclude>
+						<exclude>edu/eci/dosw/tdd/controller/SecurityUtils*</exclude>
+						<exclude>edu/eci/dosw/tdd/core/util/IdGeneratorUtil*</exclude>
+						<exclude>edu/eci/dosw/tdd/DoswLibraryApplication*</exclude>
+					</excludes>
+				</configuration>
 
 				<executions>
 
@@ -161,6 +172,28 @@
 						<goals>
 							<goal>report</goal>
 						</goals>
+					</execution>
+
+					<execution>
+						<id>check</id>
+						<phase>test</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>LINE</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.80</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+						</configuration>
 					</execution>
 
 				</executions>

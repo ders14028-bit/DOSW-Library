@@ -1,30 +1,16 @@
 # DOSW-Library
 
-## Diagrama de componentes general
-
-![img.png](src/main/resources/images/general.png)
-
----
-
-## Diagrama de componentes especifico
-
-![img.png](src/main/resources/images/especifico.png)
-
----
-
-## Diagrama de clases
-
-![img.png](src/main/resources/images/clases.png)
-
 ---
 
 ## Pruebas
 
 ### Pruebas unitarias
 
-![img.png](img.png)
+![img_2.png](src/main/resources/images/PruebasUn.png)
 
 ---
+
+### Prueba CI/CD
 
 ![img_1.png](img_1.png)
 
@@ -36,5 +22,9 @@
 
 - [Video actualizado con parte 2](https://youtu.be/iKK2_mWsTwA)
 
-- 
+- [Mongo](https://youtu.be/B8Vf0eF5CMo)
+
+- [Azure](https://youtu.be/DFdWqCePzfc)
+
+
 
